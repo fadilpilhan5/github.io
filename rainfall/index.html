@@ -11,8 +11,8 @@
 <body>
     <div class="container">
         <h1>Rainfall Data</h1>
-        <div id="currentRainfall">Current Rainfall: 0.00 mm</div>
-        <div id="yesterdayRainfall">Yesterday's Rainfall: 0.00 mm</div>
+        <div id="rainfall">Waiting for current rainfall data...</div>
+        <div id="totalRainfall">Total Rainfall: 0.00 mm</div>
     </div>
 
     <script>
@@ -23,13 +23,12 @@
 
         let client = new Paho.MQTT.Client(mqttBroker, mqttClientId);
 
-        let currentRainfall = 0;
-        let yesterdayRainfall = 0;
-
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
 
         client.connect({ onSuccess: onConnect });
+
+        let totalRainfall = 0; // Initialize total rainfall
 
         function onConnect() {
             console.log('Connected to MQTT broker');
@@ -44,18 +43,11 @@
 
         function onMessageArrived(message) {
             console.log('Message arrived: ' + message.payloadString);
-            if (message.destinationName === mqttTopicTip) {
-                // Increment current rainfall
-                currentRainfall += 0.2; // Assume each tip adds 0.2 mm
-
-                // Update UI
-                document.getElementById('currentRainfall').innerText = 'Current Rainfall: ' + currentRainfall.toFixed(2) + ' mm';
-            }
+            let tip = parseFloat(message.payloadString);
+            totalRainfall += tip; // Update total rainfall
+            document.getElementById('rainfall').innerText = 'Current Rainfall Tip: ' + tip + ' mm';
+            document.getElementById('totalRainfall').innerText = 'Total Rainfall: ' + totalRainfall.toFixed(2) + ' mm';
         }
-
-        // Optionally handle time-based updates to reset daily accumulation
-        // You can use setInterval or Date objects to check the time and reset yesterday's rainfall at midnight
-
     </script>
 </body>
 </html>
