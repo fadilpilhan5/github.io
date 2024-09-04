@@ -1,20 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Rainfall Data</title>
-    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.1.0/mqttws31.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <h1>Rainfall Data</h1>
-        <div id="currentRainfall">Waiting for current rainfall data...</div>
-        <div id="yesterdayRainfall">Waiting for yesterday's rainfall data...</div>
+        <div id="currentRainfall">Current Rainfall: 0.00 mm</div>
+        <div id="yesterdayRainfall">Yesterday's Rainfall: 0.00 mm</div>
     </div>
 
-    <!-- Include the MQTT.js library -->
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // MQTT broker settings
+        const mqttBroker = 'ws://broker.emqx.io:8083/mqtt'; // Use WebSocket URL for MQTT
+        const mqttClientId = 'web_client_' + Math.random().toString(16).substr(2, 8);
+        const mqttTopicTip = 'curah_hujan/tip';
+
+        let client = new Paho.MQTT.Client(mqttBroker, mqttClientId);
+
+        let currentRainfall = 0;
+        let yesterdayRainfall = 0;
+
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        client.connect({ onSuccess: onConnect });
+
+        function onConnect() {
+            console.log('Connected to MQTT broker');
+            client.subscribe(mqttTopicTip);
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log('Connection lost: ' + responseObject.errorMessage);
+            }
+        }
+
+        function onMessageArrived(message) {
+            console.log('Message arrived: ' + message.payloadString);
+            if (message.destinationName === mqttTopicTip) {
+                // Increment current rainfall
+                currentRainfall += 0.2; // Assume each tip adds 0.2 mm
+
+                // Update UI
+                document.getElementById('currentRainfall').innerText = 'Current Rainfall: ' + currentRainfall.toFixed(2) + ' mm';
+            }
+        }
+
+        // Optionally handle time-based updates to reset daily accumulation
+        // You can use setInterval or Date objects to check the time and reset yesterday's rainfall at midnight
+
+    </script>
 </body>
 </html>
